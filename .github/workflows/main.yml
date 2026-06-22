@@ -5,6 +5,7 @@ on:
     branches:
       - main
       - master
+  workflow_dispatch: # يتيح لك تشغيل البناء يدوياً أيضاً
 
 jobs:
   build:
@@ -29,7 +30,18 @@ jobs:
         run: bun install
 
       - name: Build Web Project
-        run: bun run build
+        run: |
+          if grep -q '"build":' package.json; then
+            bun run build
+          else
+            bun x vite build
+          fi
+
+      - name: Check and Add Android Platform
+        run: |
+          if [ ! -d "android" ]; then
+            bun x cap add android
+          fi
 
       - name: Sync Capacitor Android
         run: |
@@ -38,6 +50,7 @@ jobs:
       - name: Build Android App (APK)
         run: |
           cd android
+          chmod +x gradlew
           ./gradlew assembleDebug
 
       - name: Upload APK Artifact
